@@ -1,0 +1,23 @@
+[package]
+name = "rust-tonic-calculator"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "calculator-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "calculator-client"
+path = "src/client.rs"
+
+[dependencies]
+tonic = "0.6.2"
+prost = "0.9.0"
+tokio = {version = "1.16.1", features = ["macros", "rt-multi-thread"]}
+tokio-stream = {version = "0.1.8", features = ["net"]}
+rand = "0.8.4"
+futures = {version = "0.3.19", default-features = false, features = ["alloc"]}
+
+[build-dependencies]
+tonic-build = "0.6.2"
