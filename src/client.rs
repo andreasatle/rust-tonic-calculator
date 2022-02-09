@@ -4,7 +4,7 @@ pub mod calculator {
 use futures::stream;
 use tonic::Request;
 use calculator::calculator_client::CalculatorClient;
-use calculator::{SumRequest, PrimeFactorRequest, AverageRequest, FindMaxRequest};
+use calculator::{SumRequest, PrimeFactorRequest, AverageRequest, FindMaxRequest, SquareRootRequest};
 
 use std::time::Duration;
 use tokio::time;
@@ -21,7 +21,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     client_prime_factors(&mut client, 0).await?;
     client_prime_factors(&mut client, 1).await?;
     client_average(&mut client, vec![1.0,4.0,9.0,16.0,25.0]).await?;
-    client_find_max(&mut client, vec![3,5,8,5,3,2,9,5,6,7,11,4,7,98,7,99,5]).await?;
+    client_find_max(&mut client, vec![-3,5,8,5,3,2,9,5,6,7,11,4,7,98,7,99,5]).await?;
+    client_square_root(&mut client, 25.0).await?;
+    client_square_root(&mut client, -25.0).await?;
     Ok(())
 }
 
@@ -77,19 +79,36 @@ async fn client_average(client: &mut Client, data: Vec<f64>) -> Result<(), Box<d
 
 async fn client_find_max(client: &mut Client, data: Vec<i32>) -> Result<(), Box<dyn std::error::Error>> {
     println!("Request to rpc find_max({:?})", data);
+    let mut interval = time::interval(Duration::from_millis(300));
 
     let outbound = async_stream::stream! {
         for x in data.iter() {
             let request = FindMaxRequest{number:*x};
-            println!("{},{:?}",*x,request);
+            println!("rpc find_max({:?})",request);
+            interval.tick().await;
             yield request;
         }
     };
-    let response = client.find_max(Request::new(outbound)).await?;
-    let mut inbound = response.into_inner();
+    let mut response = client.find_max(Request::new(outbound)).await?.into_inner();
 
-    while let Some(note) = inbound.message().await? {
-        println!("Response from find_max: {:?}", note);
+    while let Some(res) = response.message().await? {
+        println!("Response from find_max: {:?}", res);
+    }
+
+    Ok(())
+}
+
+async fn client_square_root(client: &mut Client, number: f64) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Request to rpc square_root({})", number);
+    let response = client.square_root(Request::new(SquareRootRequest {
+        number,
+    })).await;
+
+    if let Err(status) = &response {
+        println!("Status: {:?}, {:?}", status.code(), status.message());
+    } else {
+        let response = response?.into_inner();
+        println!("Response from rpc square_root({}): {}", number, response.sqrt);    
     }
 
     Ok(())

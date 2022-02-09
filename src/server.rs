@@ -1,4 +1,4 @@
-use tonic::{transport::Server, Request, Response, Status, Streaming};
+use tonic::{transport::Server, Request, Response, Status, Streaming, Code};
 
 pub mod calculator {
     tonic::include_proto!("calculator");
@@ -110,6 +110,7 @@ impl Calculator for MyCalculator {
 
     async fn find_max(&self, request: Request<Streaming<FindMaxRequest>>) -> Result<Response<Self::FindMaxStream>, Status> {
         println!("find_max(stream)");
+        let mut interval = time::interval(Duration::from_millis(200));
 
         let mut maxVal = 0;
         let mut first = true;
@@ -120,9 +121,12 @@ impl Calculator for MyCalculator {
             while let Some(req) = stream.next().await {
                 let req = req?;
 
+                println!("find_max({}), with max: {}", req.number, maxVal);
                 if first || req.number > maxVal {
                     maxVal = req.number;
                     first = false;
+                    interval.tick().await;
+
                     yield FindMaxResponse{max: maxVal};
                 }
             }
@@ -132,7 +136,17 @@ impl Calculator for MyCalculator {
     }
 
     async fn square_root(&self, request: Request<SquareRootRequest>) -> Result<Response<SquareRootResponse>, Status> {
-        unimplemented!();
+        let number = request.into_inner().number;
+        println!("square_root({:?})", number);
+
+        if number < 0.0 {
+            return Err(Status::new(Code::InvalidArgument, "Square root of negative number"));
+        }
+        let response = calculator::SquareRootResponse {
+            sqrt: number.sqrt(),
+        };
+
+        Ok(Response::new(response))
     }
 
 }
