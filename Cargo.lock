@@ -609,6 +609,7 @@ dependencies = [
 name = "rust-tonic-calculator"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "futures",
  "prost",
  "rand",

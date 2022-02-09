@@ -18,6 +18,7 @@ tokio = {version = "1.16.1", features = ["macros", "rt-multi-thread"]}
 tokio-stream = {version = "0.1.8", features = ["net"]}
 rand = "0.8.4"
 futures = {version = "0.3.19", default-features = false, features = ["alloc"]}
+async-stream = "0.3.2"
 
 [build-dependencies]
 tonic-build = "0.6.2"

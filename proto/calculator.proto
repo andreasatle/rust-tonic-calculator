@@ -7,15 +7,15 @@ message PrimeFactorRequest { uint64 number = 1; }
 message PrimeFactorResponse { uint64 factor = 1; }
 message AverageRequest { double number = 1; }
 message AverageResponse { double average = 1; }
-// message FindMaxRequest { int32 number = 1; }
-// message FindMaxResponse { int32 max = 1; }
-// message SquareRootRequest { double number = 1; }
-// message SquareRootResponse { double sqrt = 1; }
+message FindMaxRequest { int32 number = 1; }
+message FindMaxResponse { int32 max = 1; }
+message SquareRootRequest { double number = 1; }
+message SquareRootResponse { double sqrt = 1; }
 
 service Calculator {
   rpc Sum(SumRequest) returns (SumResponse) {};
   rpc PrimeFactors(PrimeFactorRequest) returns (stream PrimeFactorResponse) {};
   rpc Average(stream AverageRequest) returns (AverageResponse) {};
-  //  rpc FindMax(stream FindMaxRequest) returns (stream FindMaxResponse) {};
-  //  rpc SquareRoot(SquareRootRequest) returns (SquareRootResponse) {};
+  rpc FindMax(stream FindMaxRequest) returns (stream FindMaxResponse) {};
+  rpc SquareRoot(SquareRootRequest) returns (SquareRootResponse) {};
 }

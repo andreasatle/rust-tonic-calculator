@@ -4,7 +4,7 @@ pub mod calculator {
 use futures::stream;
 use tonic::Request;
 use calculator::calculator_client::CalculatorClient;
-use calculator::{SumRequest, PrimeFactorRequest, AverageRequest};
+use calculator::{SumRequest, PrimeFactorRequest, AverageRequest, FindMaxRequest};
 
 use std::time::Duration;
 use tokio::time;
@@ -14,14 +14,14 @@ type Client = calculator::calculator_client::CalculatorClient<tonic::transport::
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = CalculatorClient::connect("http://[::1]:50051").await?;
-
     client_sum(&mut client, vec![]).await?;
     client_sum(&mut client, vec![2,4,6,8,-1,-3,-5,-7]).await?;
     client_sum(&mut client, vec![1,2,3,4,5,6,7,8,9]).await?;
     client_prime_factors(&mut client, 2*3*11*17*1001*4711).await?;
     client_prime_factors(&mut client, 0).await?;
     client_prime_factors(&mut client, 1).await?;
-    client_average(&mut client, vec![1.0,4.0,9.0,16.0]).await?;
+    client_average(&mut client, vec![1.0,4.0,9.0,16.0,25.0]).await?;
+    client_find_max(&mut client, vec![3,5,8,5,3,2,9,5,6,7,11,4,7,98,7,99,5]).await?;
     Ok(())
 }
 
@@ -72,5 +72,25 @@ async fn client_average(client: &mut Client, data: Vec<f64>) -> Result<(), Box<d
     let response = client.average(request).await?.into_inner();
 
     println!("Response from rpc average({:?}): {:?}", data, response);
+    Ok(())
+}
+
+async fn client_find_max(client: &mut Client, data: Vec<i32>) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Request to rpc find_max({:?})", data);
+
+    let outbound = async_stream::stream! {
+        for x in data.iter() {
+            let request = FindMaxRequest{number:*x};
+            println!("{},{:?}",*x,request);
+            yield request;
+        }
+    };
+    let response = client.find_max(Request::new(outbound)).await?;
+    let mut inbound = response.into_inner();
+
+    while let Some(note) = inbound.message().await? {
+        println!("Response from find_max: {:?}", note);
+    }
+
     Ok(())
 }

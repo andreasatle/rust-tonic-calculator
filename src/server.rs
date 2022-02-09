@@ -1,15 +1,19 @@
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{transport::Server, Request, Response, Status, Streaming};
 
 pub mod calculator {
     tonic::include_proto!("calculator");
 }
 
+use std::pin::Pin;
 use calculator::calculator_server::{Calculator, CalculatorServer};
 use calculator::{SumResponse, SumRequest};
 use calculator::{PrimeFactorResponse, PrimeFactorRequest};
 use calculator::{AverageResponse, AverageRequest};
+use calculator::{FindMaxResponse, FindMaxRequest};
+use calculator::{SquareRootResponse, SquareRootRequest};
 use futures::StreamExt;
 use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::Stream;
 use tokio::sync::mpsc;
 
 use std::time::Duration;
@@ -100,6 +104,35 @@ impl Calculator for MyCalculator {
         };
 
         Ok(Response::new(response))
+    }
+
+    type FindMaxStream = Pin<Box<dyn Stream<Item = Result<FindMaxResponse, Status>> + Send + 'static>>;
+
+    async fn find_max(&self, request: Request<Streaming<FindMaxRequest>>) -> Result<Response<Self::FindMaxStream>, Status> {
+        println!("find_max(stream)");
+
+        let mut maxVal = 0;
+        let mut first = true;
+
+        let mut stream = request.into_inner();
+
+        let output = async_stream::try_stream! {
+            while let Some(req) = stream.next().await {
+                let req = req?;
+
+                if first || req.number > maxVal {
+                    maxVal = req.number;
+                    first = false;
+                    yield FindMaxResponse{max: maxVal};
+                }
+            }
+        };
+        Ok(Response::new(Box::pin(output) as Self::FindMaxStream))
+
+    }
+
+    async fn square_root(&self, request: Request<SquareRootRequest>) -> Result<Response<SquareRootResponse>, Status> {
+        unimplemented!();
     }
 
 }
