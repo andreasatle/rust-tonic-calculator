@@ -1,9 +1,4 @@
 use tonic::{transport::Server, Request, Response, Status, Streaming, Code};
-
-pub mod calculator {
-    tonic::include_proto!("calculator");
-}
-
 use std::pin::Pin;
 use calculator::calculator_server::{Calculator, CalculatorServer};
 use calculator::{SumResponse, SumRequest};
@@ -19,11 +14,19 @@ use tokio::sync::mpsc;
 use std::time::Duration;
 use tokio::time;
 
+/// Include generated proto server and client items.
+pub mod calculator {
+    tonic::include_proto!("calculator");
+}
+
+/// MyCalculator implements Calculator.
+/// If the server has state, then the state can be put here.
 #[derive(Debug, Default)]
 pub struct MyCalculator {}
 
 #[tonic::async_trait]
 impl Calculator for MyCalculator {
+    /// rpc sum compute the sum of the input (that is a vector).
     async fn sum(
         &self,
         request: Request<SumRequest>,
@@ -43,8 +46,10 @@ impl Calculator for MyCalculator {
         Ok(Response::new(response))
     }
 
+    /// PrimeFactorsStream is the type of an output-stream of function prime_factors.
     type PrimeFactorsStream = ReceiverStream<Result<PrimeFactorResponse, Status>>;
 
+    /// prime_factors return a stream of prime factors of the input upon success.
     async fn prime_factors(
         &self,
         request: Request<PrimeFactorRequest>,
@@ -87,6 +92,7 @@ impl Calculator for MyCalculator {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
+    /// average take a stream of numbers and return the average, when the stream is closed.
     async fn average(&self, request: Request<tonic::Streaming<AverageRequest>>) -> Result<Response<AverageResponse>, Status> {
         println!("average(stream)");
         let average = |sum:f64, cnt:i64| if cnt > 0 {sum / cnt as f64} else {0.0};
@@ -106,13 +112,15 @@ impl Calculator for MyCalculator {
         Ok(Response::new(response))
     }
 
+    /// FindMaxStream is the type of an output-stream of function find_max.
     type FindMaxStream = Pin<Box<dyn Stream<Item = Result<FindMaxResponse, Status>> + Send + 'static>>;
 
+    /// find_max takes a stream of input integers and return a stream of max-values when they show up.
     async fn find_max(&self, request: Request<Streaming<FindMaxRequest>>) -> Result<Response<Self::FindMaxStream>, Status> {
         println!("find_max(stream)");
         let mut interval = time::interval(Duration::from_millis(200));
 
-        let mut maxVal = 0;
+        let mut max_val = 0;
         let mut first = true;
 
         let mut stream = request.into_inner();
@@ -121,13 +129,13 @@ impl Calculator for MyCalculator {
             while let Some(req) = stream.next().await {
                 let req = req?;
 
-                println!("find_max({}), with max: {}", req.number, maxVal);
-                if first || req.number > maxVal {
-                    maxVal = req.number;
+                println!("find_max({}), with max: {}", req.number, max_val);
+                if first || req.number > max_val {
+                    max_val = req.number;
                     first = false;
                     interval.tick().await;
 
-                    yield FindMaxResponse{max: maxVal};
+                    yield FindMaxResponse{max: max_val};
                 }
             }
         };
@@ -135,6 +143,8 @@ impl Calculator for MyCalculator {
 
     }
 
+    /// square_root compute the square root of an input argument.
+    /// When the argument is negative, we return an error-message.
     async fn square_root(&self, request: Request<SquareRootRequest>) -> Result<Response<SquareRootResponse>, Status> {
         let number = request.into_inner().number;
         println!("square_root({:?})", number);
@@ -142,6 +152,7 @@ impl Calculator for MyCalculator {
         if number < 0.0 {
             return Err(Status::new(Code::InvalidArgument, "Square root of negative number"));
         }
+        
         let response = calculator::SquareRootResponse {
             sqrt: number.sqrt(),
         };
