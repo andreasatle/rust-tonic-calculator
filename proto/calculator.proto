@@ -1,21 +1,58 @@
+// This is a prototype buffer for a simple calculator.
 syntax = "proto3";
 package calculator;
 
-message SumRequest { repeated int32 data = 1; }
-message SumResponse { int32 sum = 1; }
-message PrimeFactorRequest { uint64 number = 1; }
-message PrimeFactorResponse { uint64 factor = 1; }
-message AverageRequest { double number = 1; }
-message AverageResponse { double average = 1; }
-message FindMaxRequest { int32 number = 1; }
-message FindMaxResponse { int32 max = 1; }
-message SquareRootRequest { double number = 1; }
-message SquareRootResponse { double sqrt = 1; }
-
 service Calculator {
+
+  // Unary RPC
+  // Sum returns the sum of a vector of int32s.
   rpc Sum(SumRequest) returns (SumResponse) {};
+
+  // Server-streaming RPC
+  // PrimeFactors returns a stream of uint64 prime factors of an uint64 input.
   rpc PrimeFactors(PrimeFactorRequest) returns (stream PrimeFactorResponse) {};
+
+  // Client-streaming RPC
+  // Average returns the average of a stream of double inputs.
   rpc Average(stream AverageRequest) returns (AverageResponse) {};
+
+  // Bi-Directional streaming RPC
+  // FindMax returns a stream of max-values from a stream of i32 input.
   rpc FindMax(stream FindMaxRequest) returns (stream FindMaxResponse) {};
+
+  // Unary RPC with Error handling
+  // SquareRoot returns the sqrt of the double input.
+  // It returns an error InvalidArgument when the input is negative.
   rpc SquareRoot(SquareRootRequest) returns (SquareRootResponse) {};
 }
+
+// Argument to rpc Sum
+message SumRequest { repeated int32 data = 1; }
+
+// Return value from rpc Sum
+message SumResponse { int32 sum = 1; }
+
+// Argument to rpc PrimeFactors
+message PrimeFactorRequest { uint64 number = 1; }
+
+// Return value from rpc PrimeFactors
+message PrimeFactorResponse { uint64 factor = 1; }
+
+// Argument to rpc Average
+message AverageRequest { double number = 1; }
+
+// Return value from rpc Average
+message AverageResponse { double average = 1; }
+
+// Argument to rpc FindMax
+message FindMaxRequest { int32 number = 1; }
+
+// Return value from rpc FindMax
+message FindMaxResponse { int32 max = 1; }
+
+// Argument to rpc SquareRoot
+message SquareRootRequest { double number = 1; }
+
+// Return value from rpc SquareRoot
+message SquareRootResponse { double sqrt = 1; }
+
